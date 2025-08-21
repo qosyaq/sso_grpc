@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sso_user
+      POSTGRES_PASSWORD: sso_pass
+      POSTGRES_DB: sso_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sso_user -d sso_db"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  migrate:
+    build: .
+    depends_on:
+      - db
+    # wait-for-db then run migrator; use host "db" inside compose
+    entrypoint: ["/bin/sh", "-c", "/app/wait-for-db.sh db 5432 60 && /app/migrator --postgres-dsn=\"postgres://sso_user:sso_pass@db:5432/sso_db?sslmode=disable\" --migrations-path=/app/migrations/postgres"]
+    restart: "no"
+
+  sso:
+    build: .
+    depends_on:
+      - db
+      - migrate
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./config:/app/config:ro
+      - ./scripts/entrypoint-sso.sh:/app/entrypoint-sso.sh:ro
+    entrypoint: ["/app/entrypoint-sso.sh"]
+    environment:
+      CONFIG_PATH: ./config/local_pg.yaml
+    restart: unless-stopped
+
+volumes:
+  pgdata:
