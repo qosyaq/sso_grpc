@@ -1,8 +1,6 @@
 # ---------- builder ----------
 FROM golang:1.24.6-alpine AS builder
 
-RUN apk add --no-cache git build-base
-
 WORKDIR /src
 
 # download deps first
@@ -19,8 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/sso ./cmd/sso
 # ---------- final ----------
 FROM alpine:3.18
 
-# for pg_isready (health checks) and general runtime
-RUN apk add --no-cache ca-certificates bash postgresql-client
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
@@ -28,14 +25,13 @@ WORKDIR /app
 COPY --from=builder /out/migrator /app/migrator
 COPY --from=builder /out/sso /app/sso
 
-# copy config + migrations so migrator can use them
-COPY --from=builder /src/config /app/config
+# copy migrations so migrator can use them
 COPY --from=builder /src/migrations /app/migrations
 
-# copy helper script (if you prefer, put this file in repo at scripts/wait-for-db.sh and COPY it)
-COPY --from=builder /src/scripts/wait-for-db.sh /app/wait-for-db.sh
-RUN chmod +x /app/wait-for-db.sh
+# copy migrate entrypoint script
+COPY --from=builder /src/scripts/migrate.sh /app/migrate.sh
+RUN chmod +x /app/migrate.sh
 
-# default command (can be overridden by docker-compose)
-ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["/app/sso --config=./config/local_pg.yaml"]
+# default command (can be overridden by docker-compose); config comes from
+# the process environment (see .env.example)
+CMD ["/app/sso"]
