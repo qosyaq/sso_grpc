@@ -23,7 +23,7 @@ func main() {
 
 	log.Info("starting application", slog.Any("cfg", cfg))
 
-	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+	application := app.New(log, cfg.GRPC.Port, cfg.DatabaseURL(), cfg.TokenTTL)
 
 	go application.GRPCServ.MustRun()
 
@@ -42,13 +42,15 @@ func setupLogger(env string) *slog.Logger {
 	var log *slog.Logger
 
 	switch env {
+	case envDev:
+		log = setupPrettySlog()
 	case envLocal:
 		log = setupPrettySlog()
-	case envDev:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
 	case envProd:
+		log = slog.New(
+			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	default:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
 		)
