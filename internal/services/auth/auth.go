@@ -45,8 +45,8 @@ type AppProvider interface {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidAppID = errors.New("invalid app id")
-	ErrUserExists = errors.New("user exists")
+	ErrInvalidAppID       = errors.New("invalid app id")
+	ErrUserExists         = errors.New("user exists")
 )
 
 // New возвращает объект Auth сервиса
@@ -66,7 +66,6 @@ func New(
 	}
 }
 
-// Login логирует бля
 func (a *Auth) Login(ctx context.Context, email string, password string, appID int,
 ) (string, error) {
 	var op = "Auth.Login"
@@ -140,7 +139,6 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, password strin
 
 			return 0, fmt.Errorf("%s: %w", op, ErrUserExists)
 		}
-
 
 		log.Error("failed to save user", sl.Err(err))
 
