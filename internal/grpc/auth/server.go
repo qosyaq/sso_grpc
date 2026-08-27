@@ -13,9 +13,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ! Интерфейс сервиса Авторизации.
-
-type Auth interface {
+// AuthService Auth Service Interface
+type AuthService interface {
 	Login(
 		ctx context.Context,
 		email string,
@@ -32,12 +31,12 @@ type Auth interface {
 
 type serverAPI struct {
 	sso.UnimplementedAuthServer
-	auth      Auth
-	validator *val.Validator
+	authService AuthService
+	validator   *val.Validator
 }
 
-func Register(gRPC *grpc.Server, auth Auth, validator *val.Validator) {
-	sso.RegisterAuthServer(gRPC, &serverAPI{auth: auth, validator: validator})
+func Register(gRPC *grpc.Server, authService AuthService, validator *val.Validator) {
+	sso.RegisterAuthServer(gRPC, &serverAPI{authService: authService, validator: validator})
 }
 
 func (s *serverAPI) Login(ctx context.Context, req *sso.LoginRequest,
@@ -52,7 +51,7 @@ func (s *serverAPI) Login(ctx context.Context, req *sso.LoginRequest,
 		return nil, status.Error(codes.InvalidArgument, strings.Join(messages, "; "))
 	}
 
-	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
+	token, err := s.authService.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
@@ -76,7 +75,7 @@ func (s *serverAPI) Register(ctx context.Context, req *sso.RegisterRequest,
 		return nil, status.Error(codes.InvalidArgument, strings.Join(messages, "; "))
 	}
 
-	uid, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
+	uid, err := s.authService.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		if errors.Is(err, auth.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")
@@ -100,7 +99,7 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *sso.IsAdminRequest,
 		return nil, status.Error(codes.InvalidArgument, strings.Join(messages, "; "))
 	}
 
-	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
+	isAdmin, err := s.authService.IsAdmin(ctx, req.GetUserId())
 	if err != nil {
 		if errors.Is(err, auth.ErrUserExists) {
 			return nil, status.Error(codes.NotFound, "user not found")

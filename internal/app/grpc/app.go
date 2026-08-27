@@ -18,10 +18,10 @@ type App struct {
 	port       int
 }
 
-// Конструктор для app grpc сервера.
+// New Конструктор для app grpc сервера
 func New(
 	log *slog.Logger,
-	authService authgrpc.Auth,
+	authService authgrpc.AuthService,
 	grpcPort int,
 	validator *validator.Validator,
 ) *App {
@@ -65,7 +65,7 @@ func (a *App) Run() error {
 	return nil
 }
 
-// Stop: stops grpc server.
+// Stop stops grpc server.
 func (a *App) Stop() {
 	const op = "grpcapp.Stop"
 
