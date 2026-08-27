@@ -8,8 +8,6 @@ import (
 	"sso/internal/services/auth"
 	"sso/internal/storage/postgres"
 	"sso/internal/validator"
-
-	// "sso/internal/storage/sqlite"
 	"time"
 )
 
@@ -20,10 +18,10 @@ type App struct {
 func New(
 	log *slog.Logger,
 	grpcPort int,
-	storagePath string,
+	databaseURL string,
 	tokenTTL time.Duration,
 ) *App {
-	storage, err := postgres.New(storagePath)
+	storage, err := postgres.New(databaseURL)
 	if err != nil {
 		panic(err)
 	}
